@@ -11,6 +11,34 @@ https://graphql.org/graphql-js/.
 
 Looking for help? Find resources [from the community](https://graphql.org/community/).
 
+## Babylon Specific Test Instructions
+
+# Testing Against Monoweb
+
+You can test any changes directly against `monoweb` by first running `yarn build` to build, then updating the `graph` entry in the `resolutions` secion of `package.json` from this:
+
+```
+"resolutions": {
+    "graphql": "./lib/graphql-js-fork",
+  }
+```
+
+to this (assuming the `graphql-js` directory is sitting alongside the `monoweb` directory):
+
+```
+"resolutions": {
+    "graphql": "../graphql-js/dist",
+  }
+```
+
+then running `yarn` from monoweb to get it to pull the code into the local `node_modulues`.
+
+# Deploying To Artifactory
+
+⚠️ I gave up on consuming from Artifactory because dependencies within the `resolutions` block do not seem to support `npm` dependencies in the same way as is possible with the `dependencies` and `devDependencies` blocks.
+
+Provided `npm` is already logged in to Artifactory then deploying is as simple as cding into the `dist` directory then typing `npm publish`.
+
 ## Getting Started
 
 An overview of GraphQL in general is available in the

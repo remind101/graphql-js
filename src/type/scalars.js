@@ -1,5 +1,13 @@
 // @flow strict
 
+/*
+  NOTE: This copy of `scalars.js` includes a partial reversion of the following backwardly
+  incompatible changes:
+
+    1. <https://github.com/graphql/graphql-js/pull/1336/files>
+    2. <https://github.com/graphql/graphql-js/pull/1382/files>
+*/
+
 import isFinite from '../polyfills/isFinite';
 import isInteger from '../polyfills/isInteger';
 
@@ -17,6 +25,15 @@ import { GraphQLScalarType, isScalarType } from './definition';
 // they are internally represented as IEEE 754 doubles.
 const MAX_INT = 2147483647;
 const MIN_INT = -2147483648;
+
+const yellow = '\x1B[33m';
+const resetColor = '\x1B[37m';
+const warn = (msg: string) => {
+  // eslint-disable-next-line no-console
+  console.warn(
+    `${yellow}Type coercion of Input variables is deprecated: ${resetColor}: ${msg}`,
+  );
+};
 
 function serializeInt(value: mixed): number {
   if (typeof value === 'boolean') {
@@ -43,9 +60,8 @@ function serializeInt(value: mixed): number {
 
 function coerceInt(value: mixed): number {
   if (!isInteger(value)) {
-    throw new TypeError(
-      `Int cannot represent non-integer value: ${inspect(value)}`,
-    );
+    warn(`Int cannot represent non-integer value: ${inspect(value)}`);
+    return serializeInt(value);
   }
   if (value > MAX_INT || value < MIN_INT) {
     throw new TypeError(
@@ -91,9 +107,8 @@ function serializeFloat(value: mixed): number {
 
 function coerceFloat(value: mixed): number {
   if (!isFinite(value)) {
-    throw new TypeError(
-      `Float cannot represent non numeric value: ${inspect(value)}`,
-    );
+    warn(`Float cannot represent non numeric value: ${inspect(value)}`);
+    return serializeFloat(value);
   }
   return value;
 }
@@ -149,9 +164,8 @@ function serializeString(rawValue: mixed): string {
 
 function coerceString(value: mixed): string {
   if (typeof value !== 'string') {
-    throw new TypeError(
-      `String cannot represent a non string value: ${inspect(value)}`,
-    );
+    warn(`String cannot represent a non string value: ${inspect(value)}`);
+    return serializeString(value);
   }
   return value;
 }
@@ -174,16 +188,15 @@ function serializeBoolean(value: mixed): boolean {
   if (isFinite(value)) {
     return value !== 0;
   }
-  throw new TypeError(
-    `Boolean cannot represent a non boolean value: ${inspect(value)}`,
-  );
+
+  warn(`Boolean cannot represent a non boolean value: ${inspect(value)}`);
+  return Boolean(value);
 }
 
 function coerceBoolean(value: mixed): boolean {
   if (typeof value !== 'boolean') {
-    throw new TypeError(
-      `Boolean cannot represent a non boolean value: ${inspect(value)}`,
-    );
+    warn(`Boolean cannot represent a non boolean value: ${inspect(value)}`);
+    return serializeBoolean(value);
   }
   return value;
 }
@@ -207,7 +220,9 @@ function serializeID(rawValue: mixed): string {
   if (isInteger(value)) {
     return String(value);
   }
-  throw new TypeError(`ID cannot represent value: ${inspect(rawValue)}`);
+
+  warn(`ID cannot represent value: ${inspect(rawValue)}`);
+  return String(rawValue);
 }
 
 function coerceID(value: mixed): string {
@@ -217,7 +232,8 @@ function coerceID(value: mixed): string {
   if (isInteger(value)) {
     return value.toString();
   }
-  throw new TypeError(`ID cannot represent value: ${inspect(value)}`);
+  warn(`ID cannot represent value: ${inspect(value)}`);
+  return serializeString(value);
 }
 
 export const GraphQLID = new GraphQLScalarType({
