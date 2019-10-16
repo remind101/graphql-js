@@ -31,7 +31,7 @@ to this (assuming the `graphql-js` directory is sitting alongside the `monoweb` 
   }
 ```
 
-then running `yarn` from monoweb to get it to pull the code into the local `node_modulues`.
+then running `rm -rf node_modules/graphql && yarn --check-files` from monoweb to get it to pull the code into the local `node_modules`.
 
 # Deploying To Artifactory
 

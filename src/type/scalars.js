@@ -26,14 +26,29 @@ import { GraphQLScalarType, isScalarType } from './definition';
 const MAX_INT = 2147483647;
 const MIN_INT = -2147483648;
 
+const green = '\x1B[32m';
 const yellow = '\x1B[33m';
-const resetColor = '\x1B[37m';
-const warn = (msg: string) => {
+const white = '\x1B[37m';
+const warn = (error: string, msg: string) => {
   // eslint-disable-next-line no-console
-  console.warn(
-    `${yellow}Type coercion of Input variables is deprecated: ${resetColor}: ${msg}`,
-  );
+  console.warn(`${error}: ${msg}`);
+
+  if (process.env.NODE_ENV === 'development') {
+    setTimeout(() => {
+      // eslint-disable-next-line no-console
+      console.warn(`
+${yellow}${error}${white}:
+  ${msg}
+  ⬆️  Find inline error message in preceding logs for more context.
+  Please fix in a ${green}backwardly compatible${white} way; deprecate the incompatible field and provide a compatible replacement field.
+`);
+    }, 30000);
+  }
 };
+const warnInputCoercion = (msg: string) =>
+  warn('Type coercion of client input variables is deprecated', msg);
+const warnResultCoercion = (msg: string) =>
+  warn('Type coercion of server serialized output has become more strict', msg);
 
 function serializeInt(value: mixed): number {
   if (typeof value === 'boolean') {
@@ -60,7 +75,9 @@ function serializeInt(value: mixed): number {
 
 function coerceInt(value: mixed): number {
   if (!isInteger(value)) {
-    warn(`Int cannot represent non-integer value: ${inspect(value)}`);
+    warnInputCoercion(
+      `Int cannot represent non-integer value: ${inspect(value)}`,
+    );
     return serializeInt(value);
   }
   if (value > MAX_INT || value < MIN_INT) {
@@ -107,7 +124,9 @@ function serializeFloat(value: mixed): number {
 
 function coerceFloat(value: mixed): number {
   if (!isFinite(value)) {
-    warn(`Float cannot represent non numeric value: ${inspect(value)}`);
+    warnInputCoercion(
+      `Float cannot represent non numeric value: ${inspect(value)}`,
+    );
     return serializeFloat(value);
   }
   return value;
@@ -164,7 +183,9 @@ function serializeString(rawValue: mixed): string {
 
 function coerceString(value: mixed): string {
   if (typeof value !== 'string') {
-    warn(`String cannot represent a non string value: ${inspect(value)}`);
+    warnInputCoercion(
+      `String cannot represent a non string value: ${inspect(value)}`,
+    );
     return serializeString(value);
   }
   return value;
@@ -189,13 +210,17 @@ function serializeBoolean(value: mixed): boolean {
     return value !== 0;
   }
 
-  warn(`Boolean cannot represent a non boolean value: ${inspect(value)}`);
+  warnResultCoercion(
+    `Boolean cannot represent a non boolean value: ${inspect(value)}`,
+  );
   return Boolean(value);
 }
 
 function coerceBoolean(value: mixed): boolean {
   if (typeof value !== 'boolean') {
-    warn(`Boolean cannot represent a non boolean value: ${inspect(value)}`);
+    warnInputCoercion(
+      `Boolean cannot represent a non boolean value: ${inspect(value)}`,
+    );
     return serializeBoolean(value);
   }
   return value;
@@ -221,7 +246,7 @@ function serializeID(rawValue: mixed): string {
     return String(value);
   }
 
-  warn(`ID cannot represent value: ${inspect(rawValue)}`);
+  warnResultCoercion(`ID cannot represent value: ${inspect(rawValue)}`);
   return String(rawValue);
 }
 
@@ -232,7 +257,7 @@ function coerceID(value: mixed): string {
   if (isInteger(value)) {
     return value.toString();
   }
-  warn(`ID cannot represent value: ${inspect(value)}`);
+  warnInputCoercion(`ID cannot represent value: ${inspect(value)}`);
   return serializeString(value);
 }
 
